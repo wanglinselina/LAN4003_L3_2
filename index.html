@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>香港健康生活產業大奬 - 學生專題研習工作台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 p-6">
+    <div class="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-md">
+        <h1 class="text-2xl font-bold text-center mb-6 border-b pb-4">香港健康生活產業大奬 - 專題研習工作台</h1>
+        
+        <!-- 報告基本資料 -->
+        <section class="mb-8">
+            <h2 class="text-xl font-bold mb-4 bg-blue-100 p-2 rounded">一、 報告基本資料</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block font-semibold">報告目的：</label><input type="text" class="w-full border p-2 rounded" placeholder="例如：說服評委產品值得獲獎"></div>
+                <div><label class="block font-semibold">報告身份：</label><input type="text" class="w-full border p-2 rounded" placeholder="例如：公司代表"></div>
+                <div><label class="block font-semibold">報告對象：</label><input type="text" class="w-full border p-2 rounded" placeholder="例如：評審委員會委員"></div>
+                <div><label class="block font-semibold">報告場合：</label><input type="text" class="w-full border p-2 rounded" placeholder="例如：遴選會"></div>
+            </div>
+            <div class="mt-4">
+                <label class="block font-semibold">選擇健康產品或服務名稱：</label>
+                <input type="text" class="w-full border p-2 rounded" placeholder="請輸入本港健康產品或服務名稱">
+            </div>
+        </section>
+
+        <!-- 論點建立 -->
+        <section class="mb-8">
+            <h2 class="text-xl font-bold mb-4 bg-blue-100 p-2 rounded">二、 論點建立</h2>
+            <div class="mb-4">
+                <label class="block font-semibold">中心論點：</label>
+                <input type="text" class="w-full border p-2 rounded" placeholder="例如：XX產品以人為本，功能卓越，值得獲取香港健康生活產業大奬">
+            </div>
+            <div class="mb-4 p-4 border rounded bg-gray-50">
+                <label class="block font-semibold">選擇評審準則（論證方向）：</label>
+                <select class="w-full border p-2 rounded mb-2">
+                    <option>市場表現</option>
+                    <option>社會價值</option>
+                    <option>功能/功效（與健康相關）</option>
+                    <option>創新</option>
+                    <option>可持續發展</option>
+                </select>
+                <label class="block font-semibold">次分論點建構：</label>
+                <input type="text" class="w-full border p-2 rounded" placeholder="請將評審準則轉化為具體分論點，例如：產品功能卓越">
+            </div>
+        </section>
+
+        <!-- 論據設計與資料搜集 -->
+        <section class="mb-8">
+            <h2 class="text-xl font-bold mb-4 bg-blue-100 p-2 rounded">三、 論據與資料搜集方向設計</h2>
+            <p class="text-sm text-gray-600 mb-4">請根據你負責的分論點，設計至少3-6個論據，並註明是一手或二手資料及論證方法。</p>
+            
+            <div id="evidence-container">
+                <!-- 論據區塊模板 -->
+                <div class="mb-4 p-4 border rounded border-blue-200">
+                    <h3 class="font-bold mb-2">論據一</h3>
+                    <div class="grid grid-cols-3 gap-4 mb-2">
+                        <div>
+                            <label class="block text-sm font-semibold">搜集資料的方法：</label>
+                            <select class="w-full border p-1 rounded">
+                                <option>問卷調查 (一手)</option>
+                                <option>專家/用家訪問 (一手)</option>
+                                <option>親身體驗 (一手)</option>
+                                <option>觀察分析 (一手+二手)</option>
+                                <option>機構測試結果 (二手)</option>
+                                <option>網上資料/報導 (二手)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold">論證方法：</label>
+                            <select class="w-full border p-1 rounded">
+                                <option>舉例論證</option>
+                                <option>引用論證</option>
+                                <option>類比論證</option>
+                                <option>對比論證</option>
+                                <option>因果分析</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold">論據方向與具體內容：</label>
+                        <textarea class="w-full border p-2 rounded h-20" placeholder="例如：設計問卷調查用家滿意度，預期證明產品能有效改善睡眠品質..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- 可複製上述區塊生成論據二、三、四 -->
+            </div>
+            <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">+ 新增論據區塊</button>
+        </section>
+
+        <!-- 匯出與總結 -->
+        <div class="text-center">
+            <button class="bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 text-lg">匯出我的論點報告大綱 (.json / .pdf)</button>
+        </div>
+    </div>
+</body>
+</html>
