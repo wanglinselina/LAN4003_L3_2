@@ -10,6 +10,13 @@ html_code = """<!DOCTYPE html>
         .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
         [contenteditable=true]:empty:before { content: attr(placeholder); color: #9ca3af; cursor: text; }
         [contenteditable=true] img { max-width: 100%; max-height: 300px; display: block; margin-top: 10px; border-radius: 4px; }
+        /* PPT 預覽樣式 */
+        .slide-card { background-color: #ffffff; background-image: radial-gradient(#f9fafb 1px, transparent 1px); background-size: 20px 20px; }
+        /* 自定義捲軸 */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="text-gray-800 p-6">
@@ -20,7 +27,7 @@ html_code = """<!DOCTYPE html>
                 <span class="text-lg">🧑‍🎓 組員填寫區 (個人論點)</span>
             </button>
             <button onclick="switchTab('leader')" id="tab-leader" class="tab-btn flex-1 py-4 text-center text-gray-600 hover:bg-gray-100 transition">
-                <span class="text-lg">👑 組長統整區 (合併報告)</span>
+                <span class="text-lg">👑 組長統整區 (合併與預覽)</span>
             </button>
         </div>
 
@@ -112,11 +119,11 @@ html_code = """<!DOCTYPE html>
         <!-- ==================== 組長統整區 ==================== -->
         <div id="section-leader" class="p-8 hidden">
             <h2 class="text-2xl font-bold mb-2 text-gray-800">組長統整與合併報告</h2>
-            <p class="text-gray-500 mb-6 pb-4 border-b">請在此設定全組的「中心論點」，並上傳組員傳給你的 `.json` 檔案進行合併。</p>
+            <p class="text-gray-500 mb-6 pb-4 border-b">請在此設定全組的「中心論點」，並上傳組員傳給你的 `.json` 檔案進行合併與 PPT 預覽。</p>
 
             <div class="bg-green-50 p-5 rounded-lg border border-green-200 mb-6">
                 <label class="block font-bold text-green-900 mb-2">全組中心論點 (Center Argument)：</label>
-                <input type="text" id="centerArgument" class="w-full border border-green-300 p-3 rounded focus:ring-2 focus:ring-green-400 outline-none" placeholder="例如：本公司的產品以人為本，功能卓越且具社會價值，值得獲取大奬。">
+                <input type="text" id="centerArgument" oninput="updatePPTPreview()" class="w-full border border-green-300 p-3 rounded focus:ring-2 focus:ring-green-400 outline-none" placeholder="例如：本公司的產品以人為本，功能卓越且具社會價值，值得獲取大奬。">
             </div>
 
             <div class="mb-8">
@@ -124,20 +131,28 @@ html_code = """<!DOCTYPE html>
                 <div class="border-2 border-dashed border-gray-400 rounded-lg p-8 text-center bg-gray-50 hover:bg-gray-100 transition cursor-pointer" onclick="document.getElementById('fileUploader').click()">
                     <span class="text-4xl mb-2 block">📁</span>
                     <p class="text-gray-600 font-bold">點擊選擇檔案，或將檔案拖曳至此</p>
+                    <p class="text-sm text-gray-400 mt-1">上傳後將自動生成 PPT 預覽</p>
                     <input type="file" id="fileUploader" multiple accept=".json" class="hidden" onchange="handleFilesUpload(event)">
                 </div>
             </div>
 
-            <!-- 預覽區 -->
-            <div id="consolidatedPreview" class="hidden mb-8">
-                <h3 class="font-bold text-xl mb-4 border-b pb-2">報告預覽</h3>
-                <div id="previewList" class="space-y-4"></div>
+            <!-- PPT 預覽區 (仿文件一簡報格式) -->
+            <div id="ppt-preview-section" class="hidden mb-8 bg-gray-800 p-6 rounded-xl">
+                <h3 class="font-bold text-xl mb-4 text-white flex justify-between items-center">
+                    <span>📺 簡報預覽 (16:9)</span>
+                    <span class="text-sm bg-gray-700 px-3 py-1 rounded text-gray-300 font-normal">可向下捲動查看各分論點投影片</span>
+                </h3>
+                
+                <div id="pptPreviewContainer" class="space-y-8 overflow-y-auto max-h-[800px] custom-scroll pr-4">
+                    <!-- PPT Slides 會由 JS 生成至此 -->
+                </div>
             </div>
 
             <div class="text-center pt-6 border-t">
                 <button onclick="exportFinalReport()" id="btn-export-final" class="bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 text-lg shadow-md transition opacity-50 cursor-not-allowed" disabled>
-                    ✅ 匯出全組最終報告 (供老師批改)
+                    ✅ 匯出全組最終報告 JSON (供老師平台批改)
                 </button>
+                <p class="text-sm text-gray-500 mt-2">此匯出的 JSON 檔案結構完全吻合教師 DeepSeek 批改系統的要求。</p>
             </div>
         </div>
     </div>
@@ -184,7 +199,8 @@ html_code = """<!DOCTYPE html>
                     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-2 mb-2 text-sm text-yellow-800">
                         <strong>💡 填寫指引：</strong> 請具體列出數據或事實，並清晰解釋<strong>「這論據怎麼樣能證明你的論點？」</strong>
                     </div>
-                    <textarea class="ev-logic w-full border border-gray-300 p-3 rounded h-28 focus:ring-2 focus:ring-blue-400 outline-none" placeholder="1. 論據內容：...\n2. 證明邏輯：..."></textarea>
+                    <textarea class="ev-logic w-full border border-gray-300 p-3 rounded h-28 focus:ring-2 focus:ring-blue-400 outline-none" placeholder="1. 論據內容：...
+2. 證明邏輯：..."></textarea>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1">論據圖片/截圖 (選填，可直接 Ctrl+V 貼上)：</label>
@@ -197,13 +213,11 @@ html_code = """<!DOCTYPE html>
             newDiv.innerHTML = template;
             container.appendChild(newDiv);
             
-            // 如果超過1個，顯示所有刪除按鈕
             updateDeleteButtons();
         }
 
         function removeEvidence(btn) {
             btn.closest('.evidence-block').remove();
-            // 重建索引
             const blocks = document.querySelectorAll('.evidence-block');
             blocks.forEach((block, idx) => {
                 block.querySelector('.ev-index').innerText = idx + 1;
@@ -230,13 +244,11 @@ html_code = """<!DOCTYPE html>
                     reader.onload = function(event) {
                         const img = document.createElement('img');
                         img.src = event.target.result;
-                        
-                        // 插入圖片前清空佔位文字效果
                         const target = e.target;
                         target.appendChild(img);
                     };
                     reader.readAsDataURL(blob);
-                    e.preventDefault(); // 阻止預設貼上文字行為
+                    e.preventDefault(); 
                 }
             }
         }
@@ -284,7 +296,6 @@ html_code = """<!DOCTYPE html>
             if(!files.length) return;
 
             consolidatedData = []; // 清空舊資料
-            document.getElementById('previewList').innerHTML = '';
             let loadedCount = 0;
 
             Array.from(files).forEach(file => {
@@ -294,14 +305,13 @@ html_code = """<!DOCTYPE html>
                         const json = JSON.parse(evt.target.result);
                         if(json.type === "member_argument") {
                             consolidatedData.push(json);
-                            renderPreview(json);
                         }
                     } catch (err) {
                         console.error("檔案解析失敗", err);
                     }
                     loadedCount++;
                     if(loadedCount === files.length) {
-                        document.getElementById('consolidatedPreview').classList.remove('hidden');
+                        updatePPTPreview();
                         document.getElementById('btn-export-final').disabled = false;
                         document.getElementById('btn-export-final').classList.remove('opacity-50', 'cursor-not-allowed');
                     }
@@ -310,19 +320,77 @@ html_code = """<!DOCTYPE html>
             });
         }
 
-        function renderPreview(data) {
-            const previewList = document.getElementById('previewList');
-            const div = document.createElement('div');
-            div.className = 'bg-white p-4 rounded border border-gray-200 shadow-sm';
-            div.innerHTML = `
-                <div class="flex justify-between items-center mb-2 border-b pb-2">
-                    <span class="font-bold text-blue-700">組員：${data.studentName}</span>
-                    <span class="text-sm bg-gray-100 px-2 py-1 rounded text-gray-600">${data.criterion}</span>
+        function updatePPTPreview() {
+            const container = document.getElementById('pptPreviewContainer');
+            const centerArg = document.getElementById('centerArgument').value.trim();
+            
+            if(consolidatedData.length === 0) {
+                container.innerHTML = '';
+                document.getElementById('ppt-preview-section').classList.add('hidden');
+                return;
+            }
+
+            // 找尋產品名稱 (取第一個有填的)
+            const productName = consolidatedData.find(d => d.productName)?.productName || "健康產品/服務報告";
+            const memberNames = consolidatedData.map(d => d.studentName).join("、");
+
+            let slidesHTML = `
+                <!-- 首頁 (標題頁) -->
+                <div class="slide-card aspect-video flex flex-col justify-center items-center p-12 text-center rounded-xl relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-4 bg-gradient-to-r from-blue-500 to-green-400"></div>
+                    <h2 class="text-4xl md:text-5xl font-extrabold text-blue-900 mb-6 drop-shadow-sm">${productName}</h2>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-10 w-4/5 mx-auto bg-white/80 p-4 rounded-lg shadow-sm border border-gray-100">
+                        中心論點：<span class="text-blue-700">${centerArg || '<span class="text-gray-400 font-normal">請於上方輸入全組中心論點</span>'}</span>
+                    </h3>
+                    <div class="text-lg text-gray-600 font-semibold mt-auto">
+                        組員：${memberNames}
+                    </div>
                 </div>
-                <div class="mb-2"><strong>分論點：</strong>${data.subArgument}</div>
-                <div class="text-sm text-gray-600">包含 ${data.evidences.length} 項論據</div>
             `;
-            previewList.appendChild(div);
+
+            // 分論點頁面
+            consolidatedData.forEach((memberData, index) => {
+                slidesHTML += `
+                    <div class="slide-card aspect-video flex flex-col p-8 rounded-xl relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-2 bg-blue-500"></div>
+                        
+                        <!-- Header -->
+                        <div class="flex justify-between items-end border-b-2 border-gray-300 pb-3 mb-6">
+                            <h3 class="text-3xl font-bold text-gray-800 w-3/4 leading-tight">
+                                <span class="text-blue-600 mr-2">論點 ${index + 1}:</span>${memberData.subArgument}
+                            </h3>
+                            <div class="text-right">
+                                <div class="text-sm text-gray-500 font-bold mb-1">${memberData.criterion}</div>
+                                <div class="text-md bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-semibold">負責人: ${memberData.studentName}</div>
+                            </div>
+                        </div>
+
+                        <!-- Content Grid (論據) -->
+                        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto custom-scroll pr-2">
+                `;
+
+                memberData.evidences.forEach((ev, evIdx) => {
+                    let imgHtml = ev.image ? `<img src="${ev.image}" class="mt-3 max-h-40 object-contain mx-auto border rounded shadow-sm">` : '';
+                    slidesHTML += `
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-bold text-blue-800 text-lg">論據 ${evIdx + 1}</h4>
+                                <span class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded font-semibold">${ev.method}</span>
+                            </div>
+                            <div class="text-sm text-gray-700 whitespace-pre-wrap flex-1 leading-relaxed">${ev.logic}</div>
+                            ${imgHtml}
+                        </div>
+                    `;
+                });
+
+                slidesHTML += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = slidesHTML;
+            document.getElementById('ppt-preview-section').classList.remove('hidden');
         }
 
         function exportFinalReport() {
@@ -336,17 +404,18 @@ html_code = """<!DOCTYPE html>
                 return;
             }
 
+            // 匯出供 DeepSeek 教師平台批改的 JSON 結構
             const finalData = {
                 type: "final_group_report",
                 centerArgument: centerArgument,
-                productName: consolidatedData[0].productName || "",
+                productName: consolidatedData.find(d => d.productName)?.productName || "",
                 membersArguments: consolidatedData
             };
 
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(finalData, null, 2));
             const dlAnchorElem = document.createElement('a');
             dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `最終小組報告統整.json`);
+            dlAnchorElem.setAttribute("download", `最終小組報告統整_${finalData.productName}.json`);
             dlAnchorElem.click();
         }
     </script>
@@ -356,4 +425,4 @@ html_code = """<!DOCTYPE html>
 with open("LAN4003_Student_Workspace.html", "w", encoding="utf-8") as f:
     f.write(html_code)
 
-print("HTML file generated successfully.")
+print("HTML code successfully written with PPT Preview logic included.")
