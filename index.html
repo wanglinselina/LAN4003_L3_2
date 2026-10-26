@@ -1,4 +1,4 @@
-html_code = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
@@ -121,27 +121,30 @@ html_code = """<!DOCTYPE html>
 
             <div class="mb-8">
                 <label class="block font-bold mb-2 text-gray-700">上傳組員檔案 (可一次選取多個，或分多次上傳)：</label>
-                <div id="dropZoneLeader" class="border-2 border-dashed border-gray-400 rounded-lg p-8 text-center bg-gray-50 hover:bg-gray-100 transition cursor-pointer" onclick="document.getElementById('fileUploader').click()">
+                <div id="dropZoneLeader" class="border-2 border-dashed border-blue-400 rounded-lg p-8 text-center bg-blue-50 hover:bg-blue-100 transition cursor-pointer" onclick="document.getElementById('fileUploader').click()">
                     <span class="text-4xl mb-2 block">📁</span>
-                    <p class="text-gray-600 font-bold">點擊選擇檔案，或將檔案拖曳至此</p>
-                    <p class="text-sm text-gray-400 mt-1">每次上傳將自動加入合併清單，並生成 PPT 預覽</p>
+                    <p class="text-blue-800 font-bold text-lg">點擊選擇組員檔案，或將 JSON 檔案拖曳至此</p>
+                    <p class="text-sm text-blue-600 mt-1">上傳後將自動合併並在下方顯示 PPT 預覽</p>
                     <input type="file" id="fileUploader" multiple accept=".json" class="hidden" onchange="handleFilesUpload(event)">
                 </div>
-                <div class="mt-2 text-right">
-                    <button onclick="clearLeaderData()" class="text-sm text-red-500 hover:underline">🗑️ 清空所有已上傳的檔案</button>
+                <div class="mt-3 flex justify-between items-center">
+                    <span id="uploadStatus" class="text-sm font-bold text-green-600"></span>
+                    <button onclick="clearLeaderData()" class="text-sm text-red-500 hover:underline border border-red-200 px-3 py-1 rounded bg-red-50">🗑️ 清空所有已上傳檔案</button>
                 </div>
             </div>
 
             <!-- PPT 預覽區 -->
-            <div id="ppt-preview-section" class="hidden mb-8 bg-gray-800 p-6 rounded-xl">
-                <h3 class="font-bold text-xl mb-4 text-white flex justify-between items-center">
-                    <span>📺 簡報預覽 (16:9)</span>
-                    <span class="text-sm bg-gray-700 px-3 py-1 rounded text-gray-300 font-normal">可向下捲動查看各頁</span>
+            <div id="ppt-preview-section" class="hidden mb-8 bg-gray-800 p-6 rounded-xl shadow-inner">
+                <h3 class="font-bold text-xl mb-4 text-white flex justify-between items-center border-b border-gray-600 pb-3">
+                    <span>📺 簡報合併預覽 (16:9)</span>
+                    <span class="text-sm bg-gray-700 px-3 py-1 rounded text-gray-300 font-normal">向下捲動查看各組員頁面</span>
                 </h3>
-                <div id="pptPreviewContainer" class="space-y-8 overflow-y-auto max-h-[800px] custom-scroll pr-4"></div>
+                <div id="pptPreviewContainer" class="space-y-8 overflow-y-auto max-h-[800px] custom-scroll pr-4 pb-4">
+                    <!-- PPT 內容將在這裡生成 -->
+                </div>
             </div>
 
-            <div class="text-center pt-6 border-t">
+            <div class="text-center pt-6 border-t border-gray-200">
                 <button onclick="exportFinalReport()" id="btn-export-final" class="bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 text-lg shadow-md transition opacity-50 cursor-not-allowed" disabled>
                     ✅ 匯出全組最終報告 JSON (供老師平台批改)
                 </button>
@@ -233,7 +236,7 @@ html_code = """<!DOCTYPE html>
             }
         }
 
-        // --- 核心修正：使用 Blob 下載檔案，解決圖片 Base64 字串過長導致 href 失效的問題 ---
+        // 使用 Blob 穩定下載大型包含圖片的 JSON
         function downloadJSONFile(data, filename) {
             const jsonString = JSON.stringify(data, null, 2);
             const blob = new Blob([jsonString], { type: "application/json" });
@@ -273,7 +276,6 @@ html_code = """<!DOCTYPE html>
                 });
             });
 
-            // 修正：使用 Blob 下載
             downloadJSONFile(data, `分論點_${studentName}.json`);
         }
 
@@ -281,13 +283,24 @@ html_code = """<!DOCTYPE html>
         function clearLeaderData() {
             consolidatedData = [];
             document.getElementById('fileUploader').value = '';
+            document.getElementById('uploadStatus').innerText = '';
             updatePPTPreview();
             document.getElementById('btn-export-final').disabled = true;
             document.getElementById('btn-export-final').classList.add('opacity-50', 'cursor-not-allowed');
             alert("已清空所有上傳紀錄！");
         }
 
-        function handleFilesUpload(e) {
+        // 將 FileReader 包裝成 Promise 以確保循序執行，解決預覽失敗問題
+        function readFileAsync(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        async function handleFilesUpload(e) {
             let files;
             if (e.type === 'drop') {
                 e.preventDefault();
@@ -295,40 +308,46 @@ html_code = """<!DOCTYPE html>
             } else {
                 files = e.target.files;
             }
-            if(!files || !files.length) return;
-
-            let loadedCount = 0;
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    try {
-                        const json = JSON.parse(evt.target.result);
-                        if(json.subArgument && Array.isArray(json.evidences)) {
-                            // 若同一位學生的資料已存在，直接覆蓋更新
-                            const existingIdx = consolidatedData.findIndex(d => d.studentName === json.studentName);
-                            if(existingIdx > -1) {
-                                consolidatedData[existingIdx] = json;
-                            } else {
-                                consolidatedData.push(json);
-                            }
-                        } else {
-                            alert(`檔案 ${file.name} 格式不符合，請確認是否為有效的組員 JSON 檔案！`);
-                        }
-                    } catch (err) {
-                        console.error("檔案解析失敗", err);
-                        alert(`檔案 ${file.name} 解析失敗！`);
-                    }
-                    loadedCount++;
-                    if(loadedCount === files.length) {
-                        updatePPTPreview();
-                        document.getElementById('btn-export-final').disabled = false;
-                        document.getElementById('btn-export-final').classList.remove('opacity-50', 'cursor-not-allowed');
-                    }
-                };
-                reader.readAsText(file);
-            });
             
-            // 重置 input 以允許重複上傳相同檔名
+            if(!files || files.length === 0) return;
+
+            let hasNewData = false;
+            let statusText = [];
+
+            for (let i = 0; i < files.length; i++) {
+                let file = files[i];
+                try {
+                    const text = await readFileAsync(file);
+                    const json = JSON.parse(text);
+                    
+                    // 驗證是否為我們產生的格式
+                    if(json.type === "member_argument" || (json.subArgument && Array.isArray(json.evidences))) {
+                        const existingIdx = consolidatedData.findIndex(d => d.studentName === json.studentName);
+                        if(existingIdx > -1) {
+                            consolidatedData[existingIdx] = json; // 覆寫更新
+                            statusText.push(`更新了 ${json.studentName} 的資料`);
+                        } else {
+                            consolidatedData.push(json); // 新增
+                            statusText.push(`載入了 ${json.studentName} 的資料`);
+                        }
+                        hasNewData = true;
+                    } else {
+                        alert(`檔案 ${file.name} 格式不符！請確保上傳的是組員個人的分論點檔案。`);
+                    }
+                } catch (err) {
+                    console.error("解析失敗", err);
+                    alert(`檔案 ${file.name} 無法解析，可能不是正確的 JSON。`);
+                }
+            }
+            
+            if (hasNewData) {
+                document.getElementById('uploadStatus').innerText = `✔️ 目前已成功合併 ${consolidatedData.length} 位組員的報告！`;
+                updatePPTPreview();
+                document.getElementById('btn-export-final').disabled = false;
+                document.getElementById('btn-export-final').classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            // 重置 file input
             if (e.target && e.target.value) e.target.value = '';
         }
 
@@ -340,11 +359,12 @@ html_code = """<!DOCTYPE html>
                     dropZone.addEventListener(eventName, preventDefaults, false);
                 });
                 function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+                
                 ['dragenter', 'dragover'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, () => dropZone.classList.add('bg-blue-50', 'border-blue-400'));
+                    dropZone.addEventListener(eventName, () => dropZone.classList.add('bg-blue-100', 'border-blue-500'));
                 });
                 ['dragleave', 'drop'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, () => dropZone.classList.remove('bg-blue-50', 'border-blue-400'));
+                    dropZone.addEventListener(eventName, () => dropZone.classList.remove('bg-blue-100', 'border-blue-500'));
                 });
                 dropZone.addEventListener('drop', handleFilesUpload, false);
             }
@@ -353,14 +373,16 @@ html_code = """<!DOCTYPE html>
         function updatePPTPreview() {
             const container = document.getElementById('pptPreviewContainer');
             const centerArg = document.getElementById('centerArgument').value.trim();
+            const section = document.getElementById('ppt-preview-section');
             
             if(consolidatedData.length === 0) {
                 container.innerHTML = '';
-                document.getElementById('ppt-preview-section').classList.add('hidden');
+                section.classList.add('hidden');
                 return;
             }
 
-            let prodName = "健康產品/服務報告";
+            // 抓取產品名稱及組員名單
+            let prodName = "健康產品/服務專題報告";
             for (let i = 0; i < consolidatedData.length; i++) {
                 if (consolidatedData[i].productName) {
                     prodName = consolidatedData[i].productName;
@@ -374,54 +396,62 @@ html_code = """<!DOCTYPE html>
             }
             let memberNamesStr = memberNames.join("、");
 
+            // 生成 PPT 首頁
             let slidesHTML = `
-                <div class="slide-card aspect-video flex flex-col justify-center items-center p-12 text-center rounded-xl relative overflow-hidden">
+                <div class="slide-card aspect-video flex flex-col justify-center items-center p-12 text-center rounded-xl relative overflow-hidden shadow-md">
                     <div class="absolute top-0 left-0 w-full h-4 bg-gradient-to-r from-blue-500 to-green-400"></div>
                     <h2 class="text-4xl md:text-5xl font-extrabold text-blue-900 mb-6 drop-shadow-sm">${prodName}</h2>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-10 w-4/5 mx-auto bg-white/80 p-4 rounded-lg shadow-sm border border-gray-100">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-10 w-4/5 mx-auto bg-white border-2 border-gray-100 p-6 rounded-lg shadow-lg">
                         中心論點：<span class="text-blue-700">${centerArg || '<span class="text-gray-400 font-normal">請於上方輸入全組中心論點</span>'}</span>
                     </h3>
-                    <div class="text-lg text-gray-600 font-semibold mt-auto">
-                        組員：${memberNamesStr}
+                    <div class="text-xl text-gray-600 font-semibold mt-auto bg-gray-100 px-6 py-2 rounded-full border border-gray-200">
+                        👨‍🎓 小組成員：${memberNamesStr}
                     </div>
                 </div>
             `;
 
-            consolidatedData.forEach((memberData, index) => {
+            // 生成每一位成員的分論點頁面
+            for (let index = 0; index < consolidatedData.length; index++) {
+                let memberData = consolidatedData[index];
+                
                 slidesHTML += `
-                    <div class="slide-card aspect-video flex flex-col p-8 rounded-xl relative overflow-hidden">
+                    <div class="slide-card aspect-video flex flex-col p-8 rounded-xl relative overflow-hidden shadow-md mt-8">
                         <div class="absolute top-0 left-0 w-full h-2 bg-blue-500"></div>
+                        
                         <div class="flex justify-between items-end border-b-2 border-gray-300 pb-3 mb-6">
                             <h3 class="text-3xl font-bold text-gray-800 w-3/4 leading-tight">
                                 <span class="text-blue-600 mr-2">論點 ${index + 1}:</span>${memberData.subArgument}
                             </h3>
                             <div class="text-right">
                                 <div class="text-sm text-gray-500 font-bold mb-1">${memberData.criterion}</div>
-                                <div class="text-md bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-semibold">負責人: ${memberData.studentName}</div>
+                                <div class="text-md bg-blue-100 text-blue-800 px-4 py-1 rounded-full font-semibold shadow-sm">負責人: ${memberData.studentName}</div>
                             </div>
                         </div>
-                        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto custom-scroll pr-2">
+                        
+                        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto custom-scroll pr-2">
                 `;
 
-                memberData.evidences.forEach((ev, evIdx) => {
-                    let imgHtml = ev.image ? `<img src="${ev.image}" class="mt-3 max-h-40 object-contain mx-auto border rounded shadow-sm">` : '';
+                for (let evIdx = 0; evIdx < memberData.evidences.length; evIdx++) {
+                    let ev = memberData.evidences[evIdx];
+                    let imgHtml = ev.image ? `<img src="${ev.image}" class="mt-4 max-h-48 object-contain mx-auto border rounded shadow-md">` : '';
+                    
                     slidesHTML += `
-                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col">
-                            <div class="flex items-center justify-between mb-2">
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-5 flex flex-col hover:shadow-md transition">
+                            <div class="flex items-center justify-between mb-3 border-b pb-2">
                                 <h4 class="font-bold text-blue-800 text-lg">論據 ${evIdx + 1}</h4>
-                                <span class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded font-semibold">${ev.method}</span>
+                                <span class="text-xs bg-gray-200 text-gray-700 px-3 py-1 rounded-full font-bold">${ev.method}</span>
                             </div>
-                            <div class="text-sm text-gray-700 whitespace-pre-wrap flex-1 leading-relaxed">${ev.logic}</div>
+                            <div class="text-[15px] text-gray-700 whitespace-pre-wrap flex-1 leading-relaxed">${ev.logic}</div>
                             ${imgHtml}
                         </div>
                     `;
-                });
+                }
 
                 slidesHTML += `</div></div>`;
-            });
+            }
 
             container.innerHTML = slidesHTML;
-            document.getElementById('ppt-preview-section').classList.remove('hidden');
+            section.classList.remove('hidden');
         }
 
         function exportFinalReport() {
@@ -444,12 +474,8 @@ html_code = """<!DOCTYPE html>
                 membersArguments: consolidatedData
             };
 
-            // 修正：使用 Blob 下載
             downloadJSONFile(finalData, `最終小組報告統整_${finalProdName}.json`);
         }
     </script>
 </body>
 </html>
-"""
-with open("LAN4003_Student_Workspace.html", "w", encoding="utf-8") as f:
-    f.write(html_code)
