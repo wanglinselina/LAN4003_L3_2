@@ -188,7 +188,7 @@ html_code = """<!DOCTYPE html>
                     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-2 mb-2 text-sm text-yellow-800">
                         <strong>💡 填寫指引：</strong> 請具體列出數據或事實，並清晰解釋<strong>「這論據怎麼樣能證明你的論點？」</strong>
                     </div>
-                    <textarea class="ev-logic w-full border border-gray-300 p-3 rounded h-28 focus:ring-2 focus:ring-blue-400 outline-none" placeholder="1. 論據內容：...\n2. 證明邏輯：..."></textarea>
+                    <textarea class="ev-logic w-full border border-gray-300 p-3 rounded h-28 focus:ring-2 focus:ring-blue-400 outline-none" placeholder="1. 論據內容：...\\n2. 證明邏輯：..."></textarea>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1">論據圖片/截圖 (選填，可直接 Ctrl+V 貼上)：</label>
@@ -233,6 +233,20 @@ html_code = """<!DOCTYPE html>
             }
         }
 
+        // --- 核心修正：使用 Blob 下載檔案，解決圖片 Base64 字串過長導致 href 失效的問題 ---
+        function downloadJSONFile(data, filename) {
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         function exportMemberData() {
             const studentName = document.getElementById('studentName').value.trim();
             const subArgument = document.getElementById('subArgument').value.trim();
@@ -259,11 +273,8 @@ html_code = """<!DOCTYPE html>
                 });
             });
 
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `分論點_${studentName}.json`);
-            dlAnchorElem.click();
+            // 修正：使用 Blob 下載
+            downloadJSONFile(data, `分論點_${studentName}.json`);
         }
 
         // --- 組長邏輯 ---
@@ -433,11 +444,8 @@ html_code = """<!DOCTYPE html>
                 membersArguments: consolidatedData
             };
 
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(finalData, null, 2));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", `最終小組報告統整_${finalProdName}.json`);
-            dlAnchorElem.click();
+            // 修正：使用 Blob 下載
+            downloadJSONFile(finalData, `最終小組報告統整_${finalProdName}.json`);
         }
     </script>
 </body>
