@@ -1,98 +1,359 @@
-<!DOCTYPE html>
+html_code = """<!DOCTYPE html>
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>香港健康生活產業大奬 - 學生專題研習工作台</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif; background-color: #f3f4f6; }
+        .tab-btn.active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
+        [contenteditable=true]:empty:before { content: attr(placeholder); color: #9ca3af; cursor: text; }
+        [contenteditable=true] img { max-width: 100%; max-height: 300px; display: block; margin-top: 10px; border-radius: 4px; }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 p-6">
-    <div class="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-md">
-        <h1 class="text-2xl font-bold text-center mb-6 border-b pb-4">香港健康生活產業大奬 - 專題研習工作台</h1>
-        
-        <!-- 報告基本資料 -->
-        <section class="mb-8">
-            <h2 class="text-xl font-bold mb-4 bg-blue-100 p-2 rounded">一、 報告基本資料</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div><label class="block font-semibold">報告目的：</label><input type="text" class="w-full border p-2 rounded" placeholder="例如：說服評委產品值得獲獎"></div>
-                <div><label class="block font-semibold">報告身份：</label><input type="text" class="w-full border p-2 rounded" placeholder="例如：公司代表"></div>
-                <div><label class="block font-semibold">報告對象：</label><input type="text" class="w-full border p-2 rounded" placeholder="例如：評審委員會委員"></div>
-                <div><label class="block font-semibold">報告場合：</label><input type="text" class="w-full border p-2 rounded" placeholder="例如：遴選會"></div>
-            </div>
-            <div class="mt-4">
-                <label class="block font-semibold">選擇健康產品或服務名稱：</label>
-                <input type="text" class="w-full border p-2 rounded" placeholder="請輸入本港健康產品或服務名稱">
-            </div>
-        </section>
+<body class="text-gray-800 p-6">
+    <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- 頂部導航 (組員 / 組長 切換) -->
+        <div class="flex border-b bg-gray-50">
+            <button onclick="switchTab('member')" id="tab-member" class="tab-btn active flex-1 py-4 text-center text-gray-600 hover:bg-gray-100 transition">
+                <span class="text-lg">🧑‍🎓 組員填寫區 (個人論點)</span>
+            </button>
+            <button onclick="switchTab('leader')" id="tab-leader" class="tab-btn flex-1 py-4 text-center text-gray-600 hover:bg-gray-100 transition">
+                <span class="text-lg">👑 組長統整區 (合併報告)</span>
+            </button>
+        </div>
 
-        <!-- 論點建立 -->
-        <section class="mb-8">
-            <h2 class="text-xl font-bold mb-4 bg-blue-100 p-2 rounded">二、 論點建立</h2>
-            <div class="mb-4">
-                <label class="block font-semibold">中心論點：</label>
-                <input type="text" class="w-full border p-2 rounded" placeholder="例如：XX產品以人為本，功能卓越，值得獲取香港健康生活產業大奬">
-            </div>
-            <div class="mb-4 p-4 border rounded bg-gray-50">
-                <label class="block font-semibold">選擇評審準則（論證方向）：</label>
-                <select class="w-full border p-2 rounded mb-2">
-                    <option>市場表現</option>
-                    <option>社會價值</option>
-                    <option>功能/功效（與健康相關）</option>
-                    <option>創新</option>
-                    <option>可持續發展</option>
-                </select>
-                <label class="block font-semibold">次分論點建構：</label>
-                <input type="text" class="w-full border p-2 rounded" placeholder="請將評審準則轉化為具體分論點，例如：產品功能卓越">
-            </div>
-        </section>
+        <!-- ==================== 組員填寫區 ==================== -->
+        <div id="section-member" class="p-8">
+            <h2 class="text-2xl font-bold mb-2 text-gray-800">撰寫個人分論點</h2>
+            <p class="text-gray-500 mb-6 pb-4 border-b">每位組員負責一個分論點。完成後點擊最下方按鈕匯出檔案，並傳送給組長。</p>
 
-        <!-- 論據設計與資料搜集 -->
-        <section class="mb-8">
-            <h2 class="text-xl font-bold mb-4 bg-blue-100 p-2 rounded">三、 論據與資料搜集方向設計</h2>
-            <p class="text-sm text-gray-600 mb-4">請根據你負責的分論點，設計至少3-6個論據，並註明是一手或二手資料及論證方法。</p>
-            
+            <!-- 基本資料 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block font-semibold mb-1">你的姓名/學號：</label>
+                    <input type="text" id="studentName" class="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none" placeholder="例如：陳大文 (12345678)">
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">健康產品或服務名稱：</label>
+                    <input type="text" id="productName" class="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none" placeholder="全組統一的產品名稱">
+                </div>
+            </div>
+
+            <!-- 論點設計 -->
+            <div class="bg-blue-50 p-5 rounded-lg border border-blue-100 mb-6">
+                <h3 class="font-bold text-blue-800 mb-3 text-lg">我的論點設計</h3>
+                <div class="mb-4">
+                    <label class="block font-semibold mb-1">負責的評審準則 (論證方向)：</label>
+                    <select id="criterion" class="w-full border border-gray-300 p-2 rounded outline-none">
+                        <option>市場表現</option>
+                        <option>社會價值</option>
+                        <option>功能/功效（與健康相關）</option>
+                        <option>創新</option>
+                        <option>可持續發展</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">分論點：</label>
+                    <input type="text" id="subArgument" class="w-full border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-400 outline-none" placeholder="將準則轉化為具體論點，例如：該產品功能卓越，能有效改善...">
+                </div>
+            </div>
+
+            <!-- 論據區塊 -->
             <div id="evidence-container">
-                <!-- 論據區塊模板 -->
-                <div class="mb-4 p-4 border rounded border-blue-200">
-                    <h3 class="font-bold mb-2">論據一</h3>
-                    <div class="grid grid-cols-3 gap-4 mb-2">
-                        <div>
-                            <label class="block text-sm font-semibold">搜集資料的方法：</label>
-                            <select class="w-full border p-1 rounded">
-                                <option>問卷調查 (一手)</option>
-                                <option>專家/用家訪問 (一手)</option>
-                                <option>親身體驗 (一手)</option>
-                                <option>觀察分析 (一手+二手)</option>
-                                <option>機構測試結果 (二手)</option>
-                                <option>網上資料/報導 (二手)</option>
-                            </select>
+                <h3 class="font-bold text-gray-800 mb-3 text-lg">搜集論據與證明邏輯</h3>
+                <p class="text-sm text-gray-600 mb-4">請提供事實論據，並解釋該論據「如何證明」你的分論點。</p>
+                
+                <!-- 初始的第一個論據 -->
+                <div class="evidence-block bg-white p-5 rounded-lg shadow-sm border border-gray-200 mb-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-bold text-gray-700 text-lg">論據 <span class="ev-index">1</span></h4>
+                        <button onclick="removeEvidence(this)" class="text-red-500 text-sm hover:underline hidden">刪除</button>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold mb-1">搜集資料的方法：</label>
+                        <select class="ev-method w-full border border-gray-300 p-2 rounded outline-none bg-gray-50">
+                            <option>問卷調查 (一手資料)</option>
+                            <option>專家/用家訪問 (一手資料)</option>
+                            <option>親身體驗 (一手資料)</option>
+                            <option>觀察分析 (一手+二手資料)</option>
+                            <option>機構測試結果 (二手資料)</option>
+                            <option>網上資料/報導 (二手資料)</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold mb-1">論據具體內容與證明邏輯：</label>
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-2 mb-2 text-sm text-yellow-800">
+                            <strong>💡 填寫指引：</strong> 請具體列出數據或事實，並清晰解釋<strong>「這論據怎麼樣能證明你的論點？」</strong>
                         </div>
-                        <div>
-                            <label class="block text-sm font-semibold">論證方法：</label>
-                            <select class="w-full border p-1 rounded">
-                                <option>舉例論證</option>
-                                <option>引用論證</option>
-                                <option>類比論證</option>
-                                <option>對比論證</option>
-                                <option>因果分析</option>
-                            </select>
-                        </div>
+                        <textarea class="ev-logic w-full border border-gray-300 p-3 rounded h-28 focus:ring-2 focus:ring-blue-400 outline-none" placeholder="1. 論據內容：(例如：問卷顯示93%用家滿意...)\n2. 證明邏輯：(這反映了產品在...方面表現卓越，因為...)"></textarea>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold">論據方向與具體內容：</label>
-                        <textarea class="w-full border p-2 rounded h-20" placeholder="例如：設計問卷調查用家滿意度，預期證明產品能有效改善睡眠品質..."></textarea>
+                        <label class="block text-sm font-semibold mb-1">論據圖片/截圖 (選填，可直接 Ctrl+V 貼上圖片)：</label>
+                        <div class="ev-image-paste w-full border-2 border-dashed border-gray-300 p-4 text-center rounded min-h-[100px] outline-none overflow-hidden" contenteditable="true" placeholder="點擊此處並按 Ctrl+V 貼上圖片..." onpaste="handleImagePaste(event)"></div>
                     </div>
                 </div>
-                
-                <!-- 可複製上述區塊生成論據二、三、四 -->
             </div>
-            <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">+ 新增論據區塊</button>
-        </section>
 
-        <!-- 匯出與總結 -->
-        <div class="text-center">
-            <button class="bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 text-lg">匯出我的論點報告大綱 (.json / .pdf)</button>
+            <button onclick="addEvidence()" class="w-full py-3 border-2 border-dashed border-blue-400 text-blue-600 font-bold rounded-lg hover:bg-blue-50 transition mb-8">
+                + 新增一項論據
+            </button>
+
+            <!-- 匯出按鈕 -->
+            <div class="text-center pt-6 border-t">
+                <button onclick="exportMemberData()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 text-lg shadow-md transition">
+                    ⬇️ 下載個人論點檔案 (.json)
+                </button>
+                <p class="text-sm text-gray-500 mt-2">下載後，請將檔案傳送給你們的「組長」。</p>
+            </div>
+        </div>
+
+        <!-- ==================== 組長統整區 ==================== -->
+        <div id="section-leader" class="p-8 hidden">
+            <h2 class="text-2xl font-bold mb-2 text-gray-800">組長統整與合併報告</h2>
+            <p class="text-gray-500 mb-6 pb-4 border-b">請在此設定全組的「中心論點」，並上傳組員傳給你的 `.json` 檔案進行合併。</p>
+
+            <div class="bg-green-50 p-5 rounded-lg border border-green-200 mb-6">
+                <label class="block font-bold text-green-900 mb-2">全組中心論點 (Center Argument)：</label>
+                <input type="text" id="centerArgument" class="w-full border border-green-300 p-3 rounded focus:ring-2 focus:ring-green-400 outline-none" placeholder="例如：本公司的產品以人為本，功能卓越且具社會價值，值得獲取大奬。">
+            </div>
+
+            <div class="mb-8">
+                <label class="block font-bold mb-2 text-gray-700">上傳組員檔案 (可一次選取多個 .json 檔案)：</label>
+                <div class="border-2 border-dashed border-gray-400 rounded-lg p-8 text-center bg-gray-50 hover:bg-gray-100 transition cursor-pointer" onclick="document.getElementById('fileUploader').click()">
+                    <span class="text-4xl mb-2 block">📁</span>
+                    <p class="text-gray-600 font-bold">點擊選擇檔案，或將檔案拖曳至此</p>
+                    <input type="file" id="fileUploader" multiple accept=".json" class="hidden" onchange="handleFilesUpload(event)">
+                </div>
+            </div>
+
+            <!-- 預覽區 -->
+            <div id="consolidatedPreview" class="hidden mb-8">
+                <h3 class="font-bold text-xl mb-4 border-b pb-2">報告預覽</h3>
+                <div id="previewList" class="space-y-4"></div>
+            </div>
+
+            <div class="text-center pt-6 border-t">
+                <button onclick="exportFinalReport()" id="btn-export-final" class="bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 text-lg shadow-md transition opacity-50 cursor-not-allowed" disabled>
+                    ✅ 匯出全組最終報告 (供老師批改)
+                </button>
+            </div>
         </div>
     </div>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        let consolidatedData = [];
+
+        // 頁籤切換
+        function switchTab(tabId) {
+            document.getElementById('section-member').classList.add('hidden');
+            document.getElementById('section-leader').classList.add('hidden');
+            document.getElementById('tab-member').classList.remove('active');
+            document.getElementById('tab-leader').classList.remove('active');
+
+            document.getElementById('section-' + tabId).classList.remove('hidden');
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+
+        // --- 組員邏輯 ---
+        function addEvidence() {
+            const container = document.getElementById('evidence-container');
+            const blocks = container.querySelectorAll('.evidence-block');
+            const newIndex = blocks.length + 1;
+            
+            const template = `
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="font-bold text-gray-700 text-lg">論據 <span class="ev-index">${newIndex}</span></h4>
+                    <button onclick="removeEvidence(this)" class="text-red-500 text-sm hover:underline">刪除</button>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-1">搜集資料的方法：</label>
+                    <select class="ev-method w-full border border-gray-300 p-2 rounded outline-none bg-gray-50">
+                        <option>問卷調查 (一手資料)</option>
+                        <option>專家/用家訪問 (一手資料)</option>
+                        <option>親身體驗 (一手資料)</option>
+                        <option>觀察分析 (一手+二手資料)</option>
+                        <option>機構測試結果 (二手資料)</option>
+                        <option>網上資料/報導 (二手資料)</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold mb-1">論據具體內容與證明邏輯：</label>
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-2 mb-2 text-sm text-yellow-800">
+                        <strong>💡 填寫指引：</strong> 請具體列出數據或事實，並清晰解釋<strong>「這論據怎麼樣能證明你的論點？」</strong>
+                    </div>
+                    <textarea class="ev-logic w-full border border-gray-300 p-3 rounded h-28 focus:ring-2 focus:ring-blue-400 outline-none" placeholder="1. 論據內容：...\n2. 證明邏輯：..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-1">論據圖片/截圖 (選填，可直接 Ctrl+V 貼上)：</label>
+                    <div class="ev-image-paste w-full border-2 border-dashed border-gray-300 p-4 text-center rounded min-h-[100px] outline-none overflow-hidden" contenteditable="true" placeholder="點擊此處並按 Ctrl+V 貼上圖片..." onpaste="handleImagePaste(event)"></div>
+                </div>
+            `;
+            
+            const newDiv = document.createElement('div');
+            newDiv.className = 'evidence-block bg-white p-5 rounded-lg shadow-sm border border-gray-200 mb-4';
+            newDiv.innerHTML = template;
+            container.appendChild(newDiv);
+            
+            // 如果超過1個，顯示所有刪除按鈕
+            updateDeleteButtons();
+        }
+
+        function removeEvidence(btn) {
+            btn.closest('.evidence-block').remove();
+            // 重建索引
+            const blocks = document.querySelectorAll('.evidence-block');
+            blocks.forEach((block, idx) => {
+                block.querySelector('.ev-index').innerText = idx + 1;
+            });
+            updateDeleteButtons();
+        }
+
+        function updateDeleteButtons() {
+            const blocks = document.querySelectorAll('.evidence-block');
+            blocks.forEach(block => {
+                const delBtn = block.querySelector('button');
+                if(blocks.length === 1) delBtn.classList.add('hidden');
+                else delBtn.classList.remove('hidden');
+            });
+        }
+
+        function handleImagePaste(e) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let index in items) {
+                const item = items[index];
+                if (item.kind === 'file') {
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = document.createElement('img');
+                        img.src = event.target.result;
+                        
+                        // 插入圖片前清空佔位文字效果
+                        const target = e.target;
+                        target.appendChild(img);
+                    };
+                    reader.readAsDataURL(blob);
+                    e.preventDefault(); // 阻止預設貼上文字行為
+                }
+            }
+        }
+
+        function exportMemberData() {
+            const studentName = document.getElementById('studentName').value.trim();
+            const subArgument = document.getElementById('subArgument').value.trim();
+            
+            if(!studentName || !subArgument) {
+                alert("請填寫姓名及分論點！");
+                return;
+            }
+
+            const data = {
+                type: "member_argument",
+                studentName: studentName,
+                productName: document.getElementById('productName').value.trim(),
+                criterion: document.getElementById('criterion').value,
+                subArgument: subArgument,
+                evidences: []
+            };
+
+            document.querySelectorAll('.evidence-block').forEach(block => {
+                let imgData = "";
+                const imgElement = block.querySelector('.ev-image-paste img');
+                if (imgElement) imgData = imgElement.src;
+
+                data.evidences.push({
+                    method: block.querySelector('.ev-method').value,
+                    logic: block.querySelector('.ev-logic').value.trim(),
+                    image: imgData
+                });
+            });
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `分論點_${studentName}.json`);
+            dlAnchorElem.click();
+        }
+
+        // --- 組長邏輯 ---
+        function handleFilesUpload(e) {
+            const files = e.target.files;
+            if(!files.length) return;
+
+            consolidatedData = []; // 清空舊資料
+            document.getElementById('previewList').innerHTML = '';
+            let loadedCount = 0;
+
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    try {
+                        const json = JSON.parse(evt.target.result);
+                        if(json.type === "member_argument") {
+                            consolidatedData.push(json);
+                            renderPreview(json);
+                        }
+                    } catch (err) {
+                        console.error("檔案解析失敗", err);
+                    }
+                    loadedCount++;
+                    if(loadedCount === files.length) {
+                        document.getElementById('consolidatedPreview').classList.remove('hidden');
+                        document.getElementById('btn-export-final').disabled = false;
+                        document.getElementById('btn-export-final').classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        function renderPreview(data) {
+            const previewList = document.getElementById('previewList');
+            const div = document.createElement('div');
+            div.className = 'bg-white p-4 rounded border border-gray-200 shadow-sm';
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-2 border-b pb-2">
+                    <span class="font-bold text-blue-700">組員：${data.studentName}</span>
+                    <span class="text-sm bg-gray-100 px-2 py-1 rounded text-gray-600">${data.criterion}</span>
+                </div>
+                <div class="mb-2"><strong>分論點：</strong>${data.subArgument}</div>
+                <div class="text-sm text-gray-600">包含 ${data.evidences.length} 項論據</div>
+            `;
+            previewList.appendChild(div);
+        }
+
+        function exportFinalReport() {
+            const centerArgument = document.getElementById('centerArgument').value.trim();
+            if(!centerArgument) {
+                alert("請填寫全組中心論點！");
+                return;
+            }
+            if(consolidatedData.length === 0) {
+                alert("尚未成功載入任何組員檔案！");
+                return;
+            }
+
+            const finalData = {
+                type: "final_group_report",
+                centerArgument: centerArgument,
+                productName: consolidatedData[0].productName || "",
+                membersArguments: consolidatedData
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(finalData, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `最終小組報告統整.json`);
+            dlAnchorElem.click();
+        }
+    </script>
 </body>
 </html>
+"""
+with open("LAN4003_Student_Workspace.html", "w", encoding="utf-8") as f:
+    f.write(html_code)
+
+print("HTML file generated successfully.")
